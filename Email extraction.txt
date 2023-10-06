@@ -1,0 +1,43 @@
+import imaplib as imp
+import email
+import html2text
+import pprint as pp
+
+def fetch_details(imapUserEmail, imapPassword):
+    imapHostServer = 'imap.gmail.com'
+    imapVar = imp.IMAP4_SSL(imapHostServer)
+    
+    try:
+        imapVar.login(imapUserEmail, imapPassword)
+        imapVar.select('Inbox')
+        result, data = imapVar.uid('search', "FROM", "notifications@signeasy.com")
+        
+        inbox_item_list = data[0].split()
+        
+        if not inbox_item_list:
+            return "No emails found."
+        
+        most_recent = inbox_item_list[-1]
+        result2, email_data = imapVar.uid('fetch', most_recent, '(RFC822)')
+        raw_email = email_data[0][1].decode("UTF-8")
+        msg = email.message_from_string(raw_email)
+        html_content = None
+
+        for part in msg.walk():
+            if part.get_content_type() == "text/html":
+                html_content = part.get_payload(decode=True).decode(part.get_content_charset(), 'ignore')
+
+        if html_content:
+            plain_text_content = html2text.html2text(html_content)
+        else:
+            plain_text_content = "No HTML content found in the email."
+
+        return plain_text_content
+    except Exception as e:
+        return f"An error occurred: {str(e)}"
+
+imapUserEmail = 'kiruthika.b@vrdella.com'  
+imapPassword = 'renm kixf nlxy avbx' # mail app password  
+
+result = fetch_details(imapUserEmail, imapPassword)
+print(result)
